@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>recipe-server</title>
+    <script src="https://unpkg.com/htmx.org@1.9.12" defer></script>
+    <style>
+      body { font-family: system-ui, sans-serif; max-width: 640px; margin: 2rem auto; padding: 0 1rem; }
+      ul { list-style: none; padding: 0; }
+      li { padding: .5rem 0; border-bottom: 1px solid #ddd; display: flex; align-items: center; }
+      .edit-link { margin-left: auto; }
+      .category { background: #eef; border-radius: 4px; padding: 0 .35rem; margin-right: .4rem; font-size: .85em; }
+    </style>
+  </head>
+  <body>
+    <h1>The Rotation</h1>
+
+    <form id="filters">
+      <input
+        type="search"
+        name="name"
+        placeholder="Filter by name"
+        hx-get="/recipes"
+        hx-trigger="input changed delay:200ms"
+        hx-target="#recipes"
+        hx-swap="innerHTML"
+      />
+      <input
+        type="search"
+        name="category"
+        placeholder="Filter by category"
+        hx-get="/recipes"
+        hx-trigger="input changed delay:200ms"
+        hx-target="#recipes"
+        hx-swap="innerHTML"
+      />
+    </form>
+
+    <div id="recipes">{{recipes}}</div>
+
+    <p>
+      <a href="/recipes/new"><strong>+ Add recipe</strong></a>
+    </p>
+  </body>
+</html>

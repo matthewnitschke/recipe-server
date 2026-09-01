@@ -1,0 +1,25 @@
+{
+  "name": "recipe-server",
+  "version": "0.2.0",
+  "private": true,
+  "type": "module",
+  "description": "Server that compiles typst recipe files to PDF, stores them in sqlite, and serves a simple htmx UI",
+  "license": "MIT",
+  "scripts": {
+    "dev": "bun --watch run src/index.ts",
+    "start": "bun run src/index.ts",
+    "test": "bun test",
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "@types/bun": "^1.2.2",
+    "@types/react": "^19.2.18",
+    "@types/react-dom": "^19.2.5",
+    "typescript": "^5.7.0"
+  },
+  "dependencies": {
+    "hono": "^4.13.5",
+    "react": "^19.2.8",
+    "react-dom": "^19.2.8"
+  }
+}
