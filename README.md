@@ -14,7 +14,7 @@ all the recipes and downloading their PDFs.
 
 ```sh
 bun install
-bun run dev          # http://localhost:8080
+bun run dev         # http://localhost:8080
 ```
 
 Open http://localhost:8080 to see the recipe list (server-rendered on load,
