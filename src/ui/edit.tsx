@@ -16,6 +16,7 @@ function EditPage({ recipe }: { recipe: Recipe | null }) {
     <html lang="en">
       <head>
         <meta charSet="utf-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
         <title>{isNew ? "New recipe - recipe-server" : `Edit ${recipe.name} - recipe-server`}</title>
         <script src="https://unpkg.com/htmx.org@1.9.12" defer></script>
         <style>{`
