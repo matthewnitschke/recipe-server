@@ -53,6 +53,28 @@ app.get("/recipes", (c) => {
   return c.html(renderHome(filter));
 });
 
+app.get("/manifest.webmanifest", (c) => {
+  const manifest = {
+    name: "🍳 The Rotation",
+    short_name: "Recipes",
+    start_url: "/",
+    display: "standalone",
+    background_color: "#ffffff",
+    theme_color: "#ffffff",
+    icons: [
+      { src: "/icon-192.png", sizes: "192x192", type: "image/png", purpose: "any" },
+      { src: "/icon-512.png", sizes: "512x512", type: "image/png", purpose: "any" },
+    ],
+  };
+  return c.json(manifest, 200, { "content-type": "application/manifest+json; charset=utf-8" });
+});
+
+const uiFile = (name: string) => Bun.file(new URL(`./ui/${name}`, import.meta.url));
+
+for (const name of ["apple-touch-icon.png", "icon-192.png", "icon-512.png"]) {
+  app.get(`/${name}`, (c) => new Response(uiFile(name), { headers: { "content-type": "image/png" } }));
+}
+
 app.get("/recipes/new", (c) => {
   return c.html(renderNewRecipePage());
 });

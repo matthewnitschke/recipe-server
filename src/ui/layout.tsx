@@ -16,6 +16,9 @@ export function renderPage(title: string, style: string, body: ReactNode): strin
         <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
         <title>{title}</title>
         <link rel="icon" href={FAVICON_HREF} />
+        <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+        <link rel="manifest" href="/manifest.webmanifest" />
+        <meta name="theme-color" content="#ffffff" />
         <script src="https://unpkg.com/htmx.org@1.9.12" defer></script>
         <style>{`${BASE_STYLE}
 ${style}`}</style>
