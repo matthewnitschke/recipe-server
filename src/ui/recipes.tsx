@@ -9,17 +9,39 @@ export function RecipeList({ recipes }: { recipes: Recipe[] }) {
   if (recipes.length === 0) {
     return <p>No recipes yet.</p>;
   }
+
+  const starred = recipes.filter((r) => r.starred);
+  const others = recipes.filter((r) => !r.starred);
+
+  const renderItem = (r: Recipe) => (
+    <li key={r.id}>
+      {r.category ? <span className="category">{r.category}</span> : null}
+      <a href={`/recipes/${r.id}`}>
+        <strong>{r.name}</strong>
+      </a>
+      <span
+        className={`star ${r.starred ? "star-on" : "star-off"}`}
+        role="button"
+        aria-label={r.starred ? "Unsave" : "Save"}
+        hx-post={`/api/recipes/${r.id}/star`}
+        hx-include="#filters"
+        hx-target="#recipes"
+        hx-swap="innerHTML"
+      >
+        {r.starred ? "★" : "☆"}
+      </span>
+    </li>
+  );
+
   return (
-    <ul>
-      {recipes.map((r) => (
-        <li key={r.id}>
-          {r.category ? <span className="category">{r.category}</span> : null}
-          <a href={`/api/recipes/${r.id}.pdf`}>
-            <strong>{r.name}</strong>
-          </a>
-          <a className="edit-link" href={`/recipes/${r.id}/edit`}>edit</a>
-        </li>
-      ))}
-    </ul>
+    <>
+      {starred.length > 0 ? (
+        <section id="saved">
+          <h2>★ Saved</h2>
+          <ul>{starred.map(renderItem)}</ul>
+        </section>
+      ) : null}
+      {others.length > 0 ? <ul>{others.map(renderItem)}</ul> : null}
+    </>
   );
 }

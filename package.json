@@ -19,6 +19,8 @@
   },
   "dependencies": {
     "hono": "^4.13.5",
+    "micromark": "^4.0.2",
+    "micromark-extension-gfm": "^3.0.0",
     "react": "^19.2.8",
     "react-dom": "^19.2.8"
   }

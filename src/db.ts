@@ -2,16 +2,28 @@ import { Database } from "bun:sqlite";
 import { mkdirSync } from "node:fs";
 import { dirname } from "node:path";
 
+export interface RecipeStep {
+  text: string;
+  /** Optional restatement of the quantities involved in this step (from a `>` line). */
+  ingredients?: string[];
+}
+
 export interface Recipe {
   id: number;
   name: string;
   category: string | null;
-  source: string;
+  markdown: string;
   created_at: string;
+  starred: boolean;
 }
 
-export interface RecipeRow extends Recipe {
-  pdf: Uint8Array;
+interface RecipeRow {
+  id: number;
+  name: string;
+  category: string | null;
+  markdown: string;
+  created_at: string;
+  starred: number;
 }
 
 export interface RecipeFilter {
@@ -33,30 +45,32 @@ export class RecipeStore {
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         name TEXT NOT NULL,
         category TEXT,
-        source TEXT NOT NULL,
-        pdf BLOB NOT NULL,
+        markdown TEXT NOT NULL DEFAULT '',
+        starred INTEGER NOT NULL DEFAULT 0,
         created_at TEXT NOT NULL DEFAULT (datetime('now'))
       );
     `);
-    const hasCategory = db
-      .query("SELECT COUNT(*) as n FROM pragma_table_info('recipes') WHERE name = 'category'")
-      .get() as { n: number };
-    if (hasCategory.n === 0) {
-      db.exec("ALTER TABLE recipes ADD COLUMN category TEXT");
-    }
+
+    const columns = new Set(
+      (db.query("SELECT name FROM pragma_table_info('recipes')").all() as { name: string }[]).map((r) => r.name),
+    );
+    if (!columns.has("markdown")) db.exec("ALTER TABLE recipes ADD COLUMN markdown TEXT NOT NULL DEFAULT ''");
+    if (!columns.has("category")) db.exec("ALTER TABLE recipes ADD COLUMN category TEXT");
+    if (!columns.has("starred")) db.exec("ALTER TABLE recipes ADD COLUMN starred INTEGER NOT NULL DEFAULT 0");
+
     return new RecipeStore(db);
   }
 
-  createRecipe(name: string, category: string | null, source: string, pdf: Uint8Array): number {
+  createRecipe(name: string, category: string | null, markdown: string): number {
     const result = this.db
-      .query("INSERT INTO recipes (name, category, source, pdf) VALUES (?, ?, ?, ?) RETURNING id")
-      .get(name, category ?? null, source, Buffer.from(pdf)) as { id: number };
+      .query("INSERT INTO recipes (name, category, markdown) VALUES (?, ?, ?) RETURNING id")
+      .get(name, category ?? null, markdown) as { id: number };
     return result.id;
   }
 
   listRecipes(filter: RecipeFilter = {}): Recipe[] {
     const clauses: string[] = [];
-    const params: Array<string | null> = [];
+    const params: string[] = [];
     if (filter.name) {
       clauses.push("name LIKE ?");
       params.push(`%${filter.name}%`);
@@ -67,21 +81,34 @@ export class RecipeStore {
     }
     const where = clauses.length ? `WHERE ${clauses.join(" AND ")}` : "";
     const rows = this.db
-      .query(`SELECT id, name, category, source, created_at FROM recipes ${where} ORDER BY id DESC`)
-      .all(...params) as Recipe[];
-    return rows;
+      .query(`SELECT id, name, category, markdown, starred, created_at FROM recipes ${where} ORDER BY id DESC`)
+      .all(...params) as RecipeRow[];
+    return rows.map((r) => ({ ...r, starred: r.starred === 1 }));
   }
 
-  getRecipe(id: number): RecipeRow | null {
-    return (this.db
-      .query("SELECT id, name, category, source, pdf, created_at FROM recipes WHERE id = ?")
-      .get(id) as RecipeRow | undefined) ?? null;
+  getRecipe(id: number): Recipe | null {
+    const row = this.db
+      .query("SELECT id, name, category, markdown, starred, created_at FROM recipes WHERE id = ?")
+      .get(id) as RecipeRow | undefined;
+    return row ? { ...row, starred: row.starred === 1 } : null;
   }
 
-  updateRecipe(id: number, name: string, category: string | null, source?: string, pdf?: Uint8Array): boolean {
+  listCategories(): string[] {
+    const rows = this.db
+      .query("SELECT DISTINCT category FROM recipes WHERE category IS NOT NULL AND category != '' ORDER BY category")
+      .all() as { category: string }[];
+    return rows.map((r) => r.category);
+  }
+
+  updateRecipe(id: number, name: string, category: string | null, markdown?: string): boolean {
     const result = this.db
-      .query("UPDATE recipes SET name = ?, category = ?, source = COALESCE(?, source), pdf = COALESCE(?, pdf) WHERE id = ?")
-      .run(name, category ?? null, source ?? null, pdf ? Buffer.from(pdf) : null, id);
+      .query("UPDATE recipes SET name = ?, category = ?, markdown = COALESCE(?, markdown) WHERE id = ?")
+      .run(name, category ?? null, markdown ?? null, id);
+    return result.changes > 0;
+  }
+
+  setStarred(id: number, starred: boolean): boolean {
+    const result = this.db.query("UPDATE recipes SET starred = ? WHERE id = ?").run(starred ? 1 : 0, id);
     return result.changes > 0;
   }
 

@@ -1,14 +1,15 @@
 # recipe-server
 
-A server for accepting `.typ` files, compiling them to PDFs with
-[Typst](https://typst.app), and storing them in a sqlite database.
-
-Provides a _very_ simple [htmx](https://htmx.org) powered website for listing
-all the recipes and downloading their PDFs.
+A server for storing recipes as Markdown documents and viewing them in the
+browser.
 
 ```
-.typ source ──> POST /api/recipes ──> typst compile ──> PDF stored in sqlite ──> served at /api/recipes/:id.pdf
+markdown recipe ──> POST /api/recipes ──> stored in sqlite ──> served at /api/recipes/:id
+                                                          └──> rendered to HTML at /recipes/:id
 ```
+
+Provides a _very_ simple [htmx](https://htmx.org) powered website for listing,
+viewing, and editing recipes in a single markdown textbox.
 
 ## Quick start
 
@@ -18,34 +19,53 @@ bun run dev         # http://localhost:8080
 ```
 
 Open http://localhost:8080 to see the recipe list (server-rendered on load,
-filterable by name/category as you type). Click **+ Add recipe** to open the
-new-recipe page, where you type the name, category, and `.typ` source directly
-in the browser. You can also add recipes from the CLI (the raw `.typ` source is
-the request body, or as JSON):
+filterable by name/category as you type). Click a recipe to view it rendered.
+Click **+ Add recipe** or **Edit** to edit the whole recipe as one markdown
+document.
 
-```sh
-curl -X POST -F "name=pancakes" -F "category=breakfast" -F "file=@pancakes.typ" \
-     http://localhost:8080/api/recipes
-curl -H 'Content-Type: application/json' \
-     -d '{"name":"pancakes","category":"breakfast","source":"= Pancakes"}' \
-     http://localhost:8080/api/recipes
+## Recipe Markdown format
+
+Recipes are stored as a single Markdown document. The YAML frontmatter is
+authoritative for `name`/`category` (no top-level `#` title):
+
+```markdown
+---
+name: Arayes
+category: mains
+---
+
+## Ingredients
+
+* 1 medium onion
+* 4 pitas
+
+## Instructions
+
+1. Cut the onion into big chunks and put it in a food processor.
+> 1 medium onion
+
+2. Process until pasty
 ```
+
+- `## Ingredients` — bullet (`*`/`-`) lines become the ingredient list.
+- `## Instructions` — numbered (`1.`) lines become steps; a `>` blockquote
+  line right after a step restates that step's ingredients, comma-separated.
 
 ## API
 
 | Method | Path | Description |
 | --- | --- | --- |
 | `GET` | `/` | server-rendered recipe page + htmx filter |
-| `POST` | `/api/recipes` | create a recipe. Accepts multipart form-data (`name`, `category` fields + `file`), or JSON `{ "source", "name", "category" }`, or the raw `.typ` source as the body (`name`/`category` via query params) |
-| `GET` | `/api/recipes` | list recipes (metadata only, JSON); filter with `?name=` / `?category=` |
-| `GET` | `/api/recipes/:id` | recipe metadata + source (JSON) |
-| `PUT` | `/api/recipes/:id` | update name/category (JSON `{ "name", "category" }`). Include `source` to also recompile the `.typ` and regenerate the PDF (422 on compile error) |
+| `POST` | `/api/recipes` | create a recipe from a markdown body (raw text, `{ "markdown" }`, or form field) |
+| `GET` | `/api/recipes` | list recipes (JSON); filter with `?name=` / `?category=` |
+| `GET` | `/api/recipes/:id` | the full recipe, including `markdown` source |
+| `PUT` | `/api/recipes/:id` | update a recipe from a markdown body |
 | `DELETE` | `/api/recipes/:id` | delete a recipe |
-| `GET` | `/api/recipes/:id.pdf` | the compiled PDF |
-| `GET` | `/recipes/new` | create page (empty name, category, source) |
-| `GET` | `/recipes/:id/edit` | edit page (name, category, editable `.typ` source, delete) |
-| `GET` | `/api/health` | `{ ok, typst }` |
 | `GET` | `/recipes` | filtered recipe list as an HTML fragment (used by the htmx UI) |
+| `GET` | `/recipes/:id` | recipe view page (rendered) |
+| `GET` | `/recipes/:id/edit` | edit page (single markdown textbox, delete) |
+| `GET` | `/recipes/new` | create page |
+| `GET` | `/api/health` | `{ ok, typst }` |
 
 ## Configuration (env vars)
 
@@ -53,7 +73,6 @@ curl -H 'Content-Type: application/json' \
 | --- | --- | --- |
 | `PORT` | `8080` | HTTP listen port |
 | `DB_PATH` | `./data/recipes.db` | sqlite database file (Docker image sets `/data/recipes.db` on the volume) |
-| `TYPST_BIN` | `typst` | path to the typst binary |
 | `MAX_BODY_BYTES` | `10485760` | max upload size |
 
 ## Storage
@@ -64,12 +83,14 @@ Recipes are stored in a sqlite database (via `bun:sqlite`):
 CREATE TABLE recipes (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   name TEXT NOT NULL,
-  category TEXT,          -- optional category, used for filtering
-  source TEXT NOT NULL,   -- original .typ source
-  pdf  BLOB NOT NULL,     -- compiled PDF
+  category TEXT,           -- optional category, used for filtering
+  markdown TEXT NOT NULL DEFAULT '',   -- the full markdown document
   created_at TEXT NOT NULL DEFAULT (datetime('now'))
 );
 ```
+
+`name`/`category` are mirrored into columns (parsed from the frontmatter at
+write time) for list filtering; the `markdown` column is the source of truth.
 
 ## Docker
 
@@ -82,9 +103,10 @@ docker run --rm -p 8080:8080 -v recipe-data:/data recipe-server
 
 ```
 src/index.ts    boots the Bun.serve server with real deps
-src/app.ts      createApp factory: router + API routes (testable deps)
-src/compile.ts  typst compile subprocess (Bun.spawn)
-src/db.ts       bun:sqlite persistence
-src/ui/          static HTML shell + TSX components (list, edit page)
-src/*.test.ts   bun test suite (uses an in-memory db + fake compiler)
+src/db.ts       bun:sqlite persistence (markdown recipe store)
+src/markdown.ts parses the markdown recipe format (frontmatter + sections)
+src/utils.ts    request body parsing
+src/compile.ts  typst compile subprocess (only health-check used for now)
+src/ui/         static HTML shell + TSX components (list, detail, edit)
+src/*.test.ts   bun test suite (uses an in-memory db)
 ```

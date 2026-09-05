@@ -1,6 +1,7 @@
 import type { Context } from "hono";
 
 import type { RecipeFilter } from "./db.js";
+import { parseMarkdown } from "./markdown.js";
 
 export class HttpError extends Error {
   constructor(public status: number, message: string) {
@@ -13,57 +14,30 @@ export function checkBodySize(req: Request, maxBodyBytes: number): void {
   if (contentLength > maxBodyBytes) throw new HttpError(413, `request body larger than ${maxBodyBytes} bytes`);
 }
 
-export async function parseSource(c: Context): Promise<{ source: string; name: string; category: string | null }> {
-  const contentType = (c.req.header("content-type") ?? "").toLowerCase();
-  const qName = c.req.query("name")?.trim();
-  const qCategory = c.req.query("category")?.trim() || null;
+export interface MarkdownInput {
+  markdown: string;
+  name: string;
+  category: string | null;
+}
 
-  if (contentType.includes("multipart/form-data")) {
-    const form = await c.req.parseBody();
-    const file = form["file"];
-    const source = file instanceof File ? await file.text() : undefined;
-    if (!source) throw new HttpError(400, `multipart form must include a "file" entry`);
-    return {
-      source,
-      name: typeof form["name"] === "string" && form["name"].trim() ? form["name"].trim() : "job",
-      category: typeof form["category"] === "string" && form["category"].trim() ? form["category"].trim() : qCategory,
-    };
-  }
+export async function parseMarkdownInput(c: Context): Promise<MarkdownInput> {
+  const contentType = (c.req.header("content-type") ?? "").toLowerCase();
+
+  let raw: string | undefined;
 
   if (contentType.includes("application/json")) {
     const parsed = (await c.req.json()) as Record<string, unknown>;
-    const source = typeof parsed.source === "string" ? parsed.source : undefined;
-    if (!source) throw new HttpError(400, `json body must include a "source" string field`);
-    const category =
-      typeof parsed.category === "string" && parsed.category.trim() ? parsed.category.trim() : qCategory;
-    const name =
-      (typeof parsed.name === "string" && parsed.name.trim() ? parsed.name : undefined) ?? qName;
-    return { source, name: name?.trim() ? name.trim() : "job", category };
+    raw = typeof parsed["markdown"] === "string" ? parsed["markdown"] : undefined;
+  } else if (contentType.includes("multipart/form-data") || contentType.includes("application/x-www-form-urlencoded")) {
+    const form = await c.req.parseBody();
+    raw = typeof form["markdown"] === "string" ? form["markdown"] : undefined;
+  } else {
+    raw = await c.req.text();
   }
 
-  if (contentType.includes("application/x-www-form-urlencoded")) {
-    const parsed = await c.req.parseBody();
-    const source = typeof parsed["source"] === "string" ? parsed["source"] : undefined;
-    if (!source) throw new HttpError(400, `form must include a "source" field`);
-    const category =
-      typeof parsed["category"] === "string" && parsed["category"].trim() ? parsed["category"].trim() : qCategory;
-    const name =
-      (typeof parsed["name"] === "string" && parsed["name"].trim() ? parsed["name"] : undefined) ?? qName;
-    return { source, name: name?.trim() ? name.trim() : "job", category };
-  }
-
-  const source = await c.req.text();
-  if (!source) throw new HttpError(400, "empty request body; send the typst source text");
-  return { source, name: qName?.trim() || "job", category: qCategory };
-}
-
-export function escapeHtml(value: string): string {
-  return value
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;")
-    .replace(/'/g, "&#39;");
+  if (!raw || !raw.trim()) throw new HttpError(400, "\"markdown\" is required");
+  const parsed = parseMarkdown(raw);
+  return { markdown: raw, name: parsed.name, category: parsed.category };
 }
 
 export function filterFromQuery(url: URL): RecipeFilter {
@@ -75,3 +49,11 @@ export function filterFromQuery(url: URL): RecipeFilter {
   };
 }
 
+export function escapeHtml(value: string): string {
+  return value
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#39;");
+}
