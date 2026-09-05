@@ -15,12 +15,8 @@ export function RecipeList({ recipes }: { recipes: Recipe[] }) {
 
   const renderItem = (r: Recipe) => (
     <li key={r.id}>
-      {r.category ? <span className="category">{r.category}</span> : null}
-      <a href={`/recipes/${r.id}`}>
-        <strong>{r.name}</strong>
-      </a>
       <span
-        className={`star ${r.starred ? "star-on" : "star-off"}`}
+        className={r.starred ? "star star-on" : "star star-off"}
         role="button"
         aria-label={r.starred ? "Unsave" : "Save"}
         hx-post={`/api/recipes/${r.id}/star`}
@@ -30,18 +26,39 @@ export function RecipeList({ recipes }: { recipes: Recipe[] }) {
       >
         {r.starred ? "★" : "☆"}
       </span>
+      <a href={`/recipes/${r.id}`}>
+        <strong>{r.name}</strong>
+      </a>
+      {r.category ? <span className="category">{r.category}</span> : null}
     </li>
   );
 
   return (
     <>
-      {starred.length > 0 ? (
+{starred.length > 0 && others.length > 0 ? (
         <section id="saved">
-          <h2>★ Saved</h2>
+          <h2 className="section-heading">
+            <span>Saved</span>
+            <button
+              className="clear-saved"
+              aria-label="Clear all saved"
+              hx-post="/api/recipes/clear-stars"
+              hx-include="#filters"
+              hx-target="#recipes"
+              hx-swap="innerHTML"
+            >
+              ✕
+            </button>
+          </h2>
           <ul>{starred.map(renderItem)}</ul>
         </section>
       ) : null}
-      {others.length > 0 ? <ul>{others.map(renderItem)}</ul> : null}
+      {others.length > 0 ? (
+        <section>
+          {starred.length > 0 ? <h2>All recipes</h2> : null}
+          <ul>{others.map(renderItem)}</ul>
+        </section>
+      ) : null}
     </>
   );
 }

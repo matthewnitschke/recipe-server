@@ -112,6 +112,11 @@ export class RecipeStore {
     return result.changes > 0;
   }
 
+  clearStars(): number {
+    const result = this.db.query("UPDATE recipes SET starred = 0 WHERE starred = 1").run();
+    return result.changes;
+  }
+
   deleteRecipe(id: number): boolean {
     const result = this.db.query("DELETE FROM recipes WHERE id = ?").run(id);
     return result.changes > 0;

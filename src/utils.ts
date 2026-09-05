@@ -48,12 +48,3 @@ export function filterFromQuery(url: URL): RecipeFilter {
     ...(category ? { category } : {}),
   };
 }
-
-export function escapeHtml(value: string): string {
-  return value
-    .replaceAll("&", "&amp;")
-    .replaceAll("<", "&lt;")
-    .replaceAll(">", "&gt;")
-    .replaceAll('"', "&quot;")
-    .replaceAll("'", "&#39;");
-}

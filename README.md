@@ -107,6 +107,6 @@ src/db.ts       bun:sqlite persistence (markdown recipe store)
 src/markdown.ts parses the markdown recipe format (frontmatter + sections)
 src/utils.ts    request body parsing
 src/compile.ts  typst compile subprocess (only health-check used for now)
-src/ui/         static HTML shell + TSX components (list, detail, edit)
+src/ui/         TSX pages: home, recipe view, edit, shared layout
 src/*.test.ts   bun test suite (uses an in-memory db)
 ```

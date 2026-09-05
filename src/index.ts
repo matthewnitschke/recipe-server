@@ -1,9 +1,10 @@
-import { Hono, type Context } from "hono";
+import { Hono } from "hono";
 
 import { RecipeStore, type RecipeFilter } from "./db.js";
 import { getTypstVersion } from "./compile.js";
-import { checkBodySize, escapeHtml, filterFromQuery, HttpError, parseMarkdownInput } from "./utils.js";
+import { checkBodySize, filterFromQuery, HttpError, parseMarkdownInput } from "./utils.js";
 import { renderRecipeList } from "./ui/recipes";
+import { renderHomePage } from "./ui/home";
 import { renderEditPage, renderNewRecipePage } from "./ui/edit";
 import { renderRecipePage } from "./ui/recipe";
 import { readFile } from "node:fs/promises";
@@ -13,7 +14,6 @@ const DB_PATH = process.env.DB_PATH ?? new URL("../data/recipes.db", import.meta
 const MAX_BODY_BYTES = Number(process.env.MAX_BODY_BYTES ?? 10 * 1024 * 1024);
 
 const store = RecipeStore.open(DB_PATH);
-const page = Bun.file(new URL("./ui/index.html", import.meta.url));
 
 const app = new Hono();
 
@@ -30,31 +30,27 @@ app.notFound((c) => {
 
 // --- HTML routes ---
 
-async function renderShell(filter: RecipeFilter = {}): Promise<string> {
-  const list = renderRecipeList(store.listRecipes(filter));
-  const selected = filter.category ?? "";
-  const categoryOptions = store
-    .listCategories()
-    .map((cat) => `<option value="${escapeHtml(cat)}"${cat === selected ? " selected" : ""}>${escapeHtml(cat)}</option>`)
-    .join("");
-  const nameValue = escapeHtml(filter.name ?? "");
-  return (await page.text())
-    .replace("{{categoryOptions}}", categoryOptions)
-    .replace("{{nameValue}}", nameValue)
-    .replace("{{recipes}}", list);
+function renderHome(filter: RecipeFilter = {}): string {
+  const recipes = store.listRecipes(filter);
+  return renderHomePage({
+    nameValue: filter.name ?? "",
+    selectedCategory: filter.category ?? "",
+    categories: store.listCategories(),
+    recipesHtml: renderRecipeList(recipes),
+  });
 }
 
-app.get("/", async (c) => {
-  return c.html(await renderShell());
+app.get("/", (c) => {
+  return c.html(renderHome());
 });
 
-app.get("/recipes", async (c) => {
+app.get("/recipes", (c) => {
   const filter = filterFromQuery(new URL(c.req.url));
   // htmx fragment requests swap just the list; plain navigations (e.g. a
   // reload or back-button visit to a pushed filter URL) get the full shell.
   const isHtmx = c.req.header("HX-Request") !== undefined;
   if (isHtmx) return c.html(renderRecipeList(store.listRecipes(filter)));
-  return c.html(await renderShell(filter));
+  return c.html(renderHome(filter));
 });
 
 app.get("/recipes/new", (c) => {
@@ -120,6 +116,19 @@ app.delete("/api/recipes/:id", (c) => {
   if (!deleted) return c.html(`<p class="error">recipe not found</p>`, 404);
   c.header("HX-Redirect", "/");
   return c.body(null, 200);
+});
+
+app.post("/api/recipes/clear-stars", async (c) => {
+  store.clearStars();
+
+  const form = await c.req.parseBody();
+  const name = typeof form["name"] === "string" ? form["name"].trim() : undefined;
+  const category = typeof form["category"] === "string" ? form["category"].trim() : undefined;
+  const filter: RecipeFilter = {
+    ...(name ? { name } : {}),
+    ...(category ? { category } : {}),
+  };
+  return c.html(renderRecipeList(store.listRecipes(filter)));
 });
 
 app.post("/api/recipes/:id/star", async (c) => {
