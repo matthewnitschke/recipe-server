@@ -25,6 +25,15 @@ const STYLE = `
     cursor: pointer; font-size: 13px; line-height: 1.4;
   }
   .btn:hover { background: #e8e8e8; }
+  #recipe-title { cursor: text; min-width: 1ch; border-radius: 4px; }
+  #recipe-title:focus { outline: 2px solid #09d; outline-offset: 3px; }
+  #recipe-title.saved { outline: 2px solid #2a9d8f; outline-offset: 3px; }
+  #recipe-title.save-error { outline: 2px solid #c00; outline-offset: 3px; }
+  #recipe-actions { display: flex; gap: .5rem; font-weight: normal; }
+  @media print {
+    .back-link, #recipe-actions { display: none; }
+    body { padding-top: 2rem; }
+  }
 `;
 
 export function renderRecipePage(recipe: Recipe): string {
@@ -36,11 +45,19 @@ export function renderRecipePage(recipe: Recipe): string {
     STYLE,
     <>
       <p>
-        <a href="/">← back to recipes</a>
+        <a className="back-link" href="/">← back to recipes</a>
       </p>
       <h1 style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '1rem' }}>
-        {parsed.name}
-        <span style={{ display: 'flex', gap: '.5rem', fontWeight: 'normal' }}>
+        <span
+          id="recipe-title"
+          contentEditable
+          suppressContentEditableWarning
+          spellCheck={false}
+          data-id={recipe.id}
+        >
+          {parsed.name}
+        </span>
+        <span id="recipe-actions">
           <button className="btn" type="button" id="copy-recipe">Copy</button>
           <a className="btn" href={`/recipes/${recipe.id}/edit`}>Edit</a>
         </span>
@@ -78,6 +95,74 @@ export function renderRecipePage(recipe: Recipe): string {
             done(legacyCopy(text));
           }
         });
+      ` }} />
+      <script dangerouslySetInnerHTML={{ __html: `
+        (function () {
+          var title = document.getElementById('recipe-title');
+          if (!title || !title.dataset.id) return;
+          var original = title.textContent.replace(/\\s+/g, ' ').trim();
+          var saving = false;
+
+          function getNewMarkdown(name) {
+            var md = document.getElementById('copy-markdown').value;
+            if (/^name:.*$/m.test(md)) return md.replace(/^name:.*$/m, 'name: ' + name);
+            var i = md.indexOf('\\n');
+            if (i === -1) return 'name: ' + name + '\\n' + md;
+            return md.slice(0, i + 1) + 'name: ' + name + '\\n' + md.slice(i + 1);
+          }
+
+          function normalize() {
+            return title.textContent.replace(/\\s+/g, ' ').trim();
+          }
+
+          function commit() {
+            if (saving) return;
+            var text = normalize();
+            if (text === '') {
+              title.textContent = original;
+              return;
+            }
+            if (text === original) return;
+
+            var md = getNewMarkdown(text);
+            var input = document.getElementById('copy-markdown');
+            var oldMarkdown = input.value;
+            input.value = md;
+            saving = true;
+            fetch('/api/recipes/' + title.dataset.id, {
+              method: 'PUT',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ markdown: md }),
+            }).then(function (res) {
+              saving = false;
+              if (!res.ok) {
+                input.value = oldMarkdown;
+                title.textContent = original;
+                title.classList.add('save-error');
+              } else {
+                original = text;
+                document.title = text + ' - recipe-server';
+                title.classList.add('saved');
+              }
+              setTimeout(function () {
+                title.classList.remove('saved', 'save-error');
+              }, 1500);
+            }).catch(function () {
+              saving = false;
+              input.value = oldMarkdown;
+              title.textContent = original;
+            });
+          }
+
+          title.addEventListener('keydown', function (e) {
+            if (e.key === 'Enter') {
+              e.preventDefault();
+              title.blur();
+            }
+          });
+
+          title.addEventListener('blur', commit);
+        })();
       ` }} />
     </>,
   );

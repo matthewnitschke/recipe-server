@@ -46,7 +46,7 @@ GET /api/health
 Response:
 
 ```json
-{ "ok": true, "typst": "v0.11.0" }
+{ "ok": true }
 ```
 
 ### Create Recipe
@@ -164,5 +164,3 @@ Error: `404` — recipe not found
 - Max request body size: 10 MB (configurable via `MAX_BODY_BYTES` env var)
 - Database: SQLite at `./data/recipes.db` (configurable via `DB_PATH`)
 - All error responses are JSON: `{ "error": "..." }`
-- The old Typst/PDF pipeline is on hold; rebuilds from `src/typst.ts` /
-  `tools/translator.ts` happened before the Markdown pivot.

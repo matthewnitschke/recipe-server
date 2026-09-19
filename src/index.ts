@@ -1,7 +1,6 @@
 import { Hono } from "hono";
 
 import { RecipeStore, type RecipeFilter } from "./db.js";
-import { getTypstVersion } from "./compile.js";
 import { checkBodySize, filterFromQuery, HttpError, parseMarkdownInput } from "./utils.js";
 import { renderRecipeList } from "./ui/recipes";
 import { renderHomePage } from "./ui/home";
@@ -98,8 +97,8 @@ app.get("/api/spec", async (c) => {
   return c.text(spec, 200, { "content-type": "text/markdown; charset=utf-8" });
 });
 
-app.get("/api/health", async (c) => {
-  return c.json({ ok: true, typst: await getTypstVersion() });
+app.get("/api/health", (c) => {
+  return c.json({ ok: true });
 });
 
 app.post("/api/recipes", async (c) => {

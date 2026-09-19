@@ -3,7 +3,7 @@
   "version": "0.2.0",
   "private": true,
   "type": "module",
-  "description": "Server that compiles typst recipe files to PDF, stores them in sqlite, and serves a simple htmx UI",
+  "description": "Server that stores recipes as Markdown in sqlite and serves a simple htmx UI",
   "license": "MIT",
   "scripts": {
     "dev": "bun --watch run src/index.ts",
