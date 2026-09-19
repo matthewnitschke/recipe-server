@@ -5,6 +5,7 @@ import type { Recipe } from "../server/db";
 import { parseMarkdown, nestStepQuotes, stripFrontmatter } from "../server/markdown";
 import { renderPage } from "./layout";
 import { InlineEditor } from "./inline-editor";
+import { TimerLinks } from "./timer-links";
 
 const STYLE = `
   h1 { margin-bottom: .25rem; }
@@ -97,6 +98,7 @@ export function renderRecipePage(recipe: Recipe): string {
         });
       ` }} />
       <InlineEditor recipeId={recipe.id} />
+      <TimerLinks />
     </>,
   );
 }
