@@ -9,7 +9,7 @@ import { renderRecipePage } from "../client/recipe";
 import { readFile } from "node:fs/promises";
 
 const PORT = Number(process.env.PORT ?? 8080);
-const DB_PATH = process.env.DB_PATH ?? new URL("../data/recipes.db", import.meta.url).pathname;
+const DB_PATH = process.env.DB_PATH ?? new URL("../../data/recipes.db", import.meta.url).pathname;
 const MAX_BODY_BYTES = Number(process.env.MAX_BODY_BYTES ?? 10 * 1024 * 1024);
 
 const store = RecipeStore.open(DB_PATH);
