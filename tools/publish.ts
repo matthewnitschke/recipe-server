@@ -1,6 +1,6 @@
 import { readFile } from "node:fs/promises";
 import { resolve } from "node:path";
-import { parseMarkdown } from "../src/markdown.js";
+import { parseMarkdown } from "../src/server/markdown.js";
 
 const DEFAULT_BASE_URL = "http://recipes.lan";
 

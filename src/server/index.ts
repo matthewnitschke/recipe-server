@@ -2,10 +2,10 @@ import { Hono } from "hono";
 
 import { RecipeStore, type RecipeFilter } from "./db.js";
 import { checkBodySize, filterFromQuery, HttpError, parseMarkdownInput } from "./utils.js";
-import { renderRecipeList } from "./ui/recipes";
-import { renderHomePage } from "./ui/home";
-import { renderEditPage, renderNewRecipePage } from "./ui/edit";
-import { renderRecipePage } from "./ui/recipe";
+import { renderRecipeList } from "../client/recipes";
+import { renderHomePage } from "../client/home";
+import { renderEditPage, renderNewRecipePage } from "../client/edit";
+import { renderRecipePage } from "../client/recipe";
 import { readFile } from "node:fs/promises";
 
 const PORT = Number(process.env.PORT ?? 8080);
@@ -68,7 +68,7 @@ app.get("/manifest.webmanifest", (c) => {
   return c.json(manifest, 200, { "content-type": "application/manifest+json; charset=utf-8" });
 });
 
-const uiFile = (name: string) => Bun.file(new URL(`./ui/${name}`, import.meta.url));
+const uiFile = (name: string) => Bun.file(new URL(`../client/icons/${name}`, import.meta.url));
 
 for (const name of ["apple-touch-icon.png", "icon-192.png", "icon-512.png"]) {
   app.get(`/${name}`, (c) => new Response(uiFile(name), { headers: { "content-type": "image/png" } }));
@@ -93,7 +93,7 @@ app.get("/recipes/:id", (c) => {
 // --- API routes ---
 
 app.get("/api/spec", async (c) => {
-  const spec = await readFile(new URL("./AGENTS.md", import.meta.url), "utf8");
+  const spec = await readFile(new URL("../AGENTS.md", import.meta.url), "utf8");
   return c.text(spec, 200, { "content-type": "text/markdown; charset=utf-8" });
 });
 

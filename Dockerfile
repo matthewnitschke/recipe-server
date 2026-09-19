@@ -18,4 +18,4 @@ ENV NODE_ENV=production \
 EXPOSE 8080
 VOLUME ["/data"]
 
-CMD ["bun", "run", "src/index.ts"]
+CMD ["bun", "run", "src/server/index.ts"]

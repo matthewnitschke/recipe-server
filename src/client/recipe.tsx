@@ -1,8 +1,8 @@
 import { micromark } from "micromark";
 import { gfm } from "micromark-extension-gfm";
 
-import type { Recipe } from "../db";
-import { parseMarkdown, nestStepQuotes, stripFrontmatter } from "../markdown";
+import type { Recipe } from "../server/db";
+import { parseMarkdown, nestStepQuotes, stripFrontmatter } from "../server/markdown";
 import { renderPage } from "./layout";
 
 const STYLE = `

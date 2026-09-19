@@ -102,10 +102,7 @@ docker run --rm -p 8080:8080 -v recipe-data:/data recipe-server
 ## Project layout
 
 ```
-src/index.ts    boots the Bun.serve server with real deps
-src/db.ts       bun:sqlite persistence (markdown recipe store)
-src/markdown.ts parses the markdown recipe format (frontmatter + sections)
-src/utils.ts    request body parsing
-src/ui/         TSX pages: home, recipe view, edit, shared layout
-src/*.test.ts   bun test suite (uses an in-memory db)
+src/server/     Hono server, sqlite store, markdown parsing, request handling
+src/client/     TSX pages: home, recipe view, edit, shared layout, icons
+src/AGENTS.md   API documentation exposed at /api/spec
 ```

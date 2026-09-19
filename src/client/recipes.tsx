@@ -1,5 +1,5 @@
 import { renderToStaticMarkup } from "react-dom/server";
-import type { Recipe } from "../db";
+import type { Recipe } from "../server/db";
 
 export function renderRecipeList(recipes: Recipe[]): string {
   return renderToStaticMarkup(<RecipeList recipes={recipes} />);

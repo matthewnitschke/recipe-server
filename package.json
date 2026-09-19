@@ -6,8 +6,8 @@
   "description": "Server that stores recipes as Markdown in sqlite and serves a simple htmx UI",
   "license": "MIT",
   "scripts": {
-    "dev": "bun --watch run src/index.ts",
-    "start": "bun run src/index.ts",
+    "dev": "bun --watch run src/server/index.ts",
+    "start": "bun run src/server/index.ts",
     "test": "bun test",
     "typecheck": "tsc --noEmit"
   },

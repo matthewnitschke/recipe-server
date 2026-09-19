@@ -1,4 +1,4 @@
-import type { Recipe } from "../db";
+import type { Recipe } from "../server/db";
 import { renderPage } from "./layout";
 
 const STYLE = `
