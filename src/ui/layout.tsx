@@ -5,7 +5,12 @@ export const FAVICON_HREF =
   "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E🍳%3C/text%3E%3C/svg%3E";
 
 const BASE_STYLE = `
-  body { font-family: system-ui, sans-serif; max-width: 640px; margin: 2rem auto; padding: 0 1rem; }
+  body {
+    font-family: system-ui, sans-serif; max-width: 640px; margin: 2rem auto; padding: 0 1rem;
+    -webkit-text-size-adjust: 100%; text-size-adjust: 100%;
+  }
+  button, a, input, select, textarea, [role="button"] { touch-action: manipulation; }
+  body input, body select, body textarea { font-size: 16px; }
 `;
 
 export function renderPage(title: string, style: string, body: ReactNode): string {

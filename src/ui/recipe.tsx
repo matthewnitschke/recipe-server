@@ -49,13 +49,34 @@ export function renderRecipePage(recipe: Recipe): string {
       {parsed.category ? <p className="category">{parsed.category}</p> : null}
       <div className="content" dangerouslySetInnerHTML={{ __html: bodyHtml }} />
       <script dangerouslySetInnerHTML={{ __html: `
+        function legacyCopy(text) {
+          var area = document.createElement('textarea');
+          area.value = text;
+          area.readOnly = true;
+          area.contentEditable = true;
+          area.style.cssText = 'position:fixed;top:0;left:0;width:1px;height:1px;opacity:0';
+          document.body.appendChild(area);
+          area.focus();
+          area.select();
+          area.setSelectionRange(0, 999999);
+          var ok = false;
+          try { ok = document.execCommand('copy'); } catch (e) {}
+          document.body.removeChild(area);
+          return ok;
+        }
         document.addEventListener('click', function (event) {
           var btn = event.target.closest('#copy-recipe');
           if (!btn) return;
-          navigator.clipboard.writeText(document.getElementById('copy-markdown').value).then(function () {
-            btn.textContent = 'Copied!';
-            setTimeout(function () { btn.textContent = 'Copy'; }, 1000);
-          });
+          var text = document.getElementById('copy-markdown').value;
+          function done(ok) {
+            btn.textContent = ok ? 'Copied!' : 'Copy failed';
+            setTimeout(function () { btn.textContent = 'Copy'; }, 1500);
+          }
+          if (navigator.clipboard && navigator.clipboard.writeText && !window.navigator.standalone) {
+            navigator.clipboard.writeText(text).then(function () { done(true); }, function () { done(legacyCopy(text)); });
+          } else {
+            done(legacyCopy(text));
+          }
         });
       ` }} />
     </>,
