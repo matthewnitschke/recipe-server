@@ -4,6 +4,7 @@ import { gfm } from "micromark-extension-gfm";
 import type { Recipe } from "../server/db";
 import { parseMarkdown, nestStepQuotes, stripFrontmatter } from "../server/markdown";
 import { renderPage } from "./layout";
+import { InlineEditor } from "./inline-editor";
 
 const STYLE = `
   h1 { margin-bottom: .25rem; }
@@ -53,7 +54,6 @@ export function renderRecipePage(recipe: Recipe): string {
           contentEditable
           suppressContentEditableWarning
           spellCheck={false}
-          data-id={recipe.id}
         >
           {parsed.name}
         </span>
@@ -96,74 +96,7 @@ export function renderRecipePage(recipe: Recipe): string {
           }
         });
       ` }} />
-      <script dangerouslySetInnerHTML={{ __html: `
-        (function () {
-          var title = document.getElementById('recipe-title');
-          if (!title || !title.dataset.id) return;
-          var original = title.textContent.replace(/\\s+/g, ' ').trim();
-          var saving = false;
-
-          function getNewMarkdown(name) {
-            var md = document.getElementById('copy-markdown').value;
-            if (/^name:.*$/m.test(md)) return md.replace(/^name:.*$/m, 'name: ' + name);
-            var i = md.indexOf('\\n');
-            if (i === -1) return 'name: ' + name + '\\n' + md;
-            return md.slice(0, i + 1) + 'name: ' + name + '\\n' + md.slice(i + 1);
-          }
-
-          function normalize() {
-            return title.textContent.replace(/\\s+/g, ' ').trim();
-          }
-
-          function commit() {
-            if (saving) return;
-            var text = normalize();
-            if (text === '') {
-              title.textContent = original;
-              return;
-            }
-            if (text === original) return;
-
-            var md = getNewMarkdown(text);
-            var input = document.getElementById('copy-markdown');
-            var oldMarkdown = input.value;
-            input.value = md;
-            saving = true;
-            fetch('/api/recipes/' + title.dataset.id, {
-              method: 'PUT',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ markdown: md }),
-            }).then(function (res) {
-              saving = false;
-              if (!res.ok) {
-                input.value = oldMarkdown;
-                title.textContent = original;
-                title.classList.add('save-error');
-              } else {
-                original = text;
-                document.title = text + ' - recipe-server';
-                title.classList.add('saved');
-              }
-              setTimeout(function () {
-                title.classList.remove('saved', 'save-error');
-              }, 1500);
-            }).catch(function () {
-              saving = false;
-              input.value = oldMarkdown;
-              title.textContent = original;
-            });
-          }
-
-          title.addEventListener('keydown', function (e) {
-            if (e.key === 'Enter') {
-              e.preventDefault();
-              title.blur();
-            }
-          });
-
-          title.addEventListener('blur', commit);
-        })();
-      ` }} />
+      <InlineEditor recipeId={recipe.id} />
     </>,
   );
 }
