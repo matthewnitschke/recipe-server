@@ -21,7 +21,8 @@ bun run dev         # http://localhost:8080
 Open http://localhost:8080 to see the recipe list (server-rendered on load,
 filterable by name/category as you type). Click a recipe to view it rendered.
 Click **+ Add recipe** or **Edit** to edit the whole recipe as one markdown
-document.
+document. On the recipe view, use the **Scale** buttons (½x, 1x, 1.5x, 2x, 3x,
+4x) to scale ingredient amounts without changing the stored recipe.
 
 ## Recipe Markdown format
 

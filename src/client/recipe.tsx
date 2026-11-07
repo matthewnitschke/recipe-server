@@ -5,6 +5,7 @@ import type { Recipe } from "../server/db";
 import { parseMarkdown, nestStepQuotes, stripFrontmatter } from "../server/markdown";
 import { renderPage } from "./layout";
 import { InlineEditor } from "./inline-editor";
+import { RecipeScaler, ScaleControls } from "./scaler";
 import { TimerLinks } from "./timer-links";
 
 const STYLE = `
@@ -65,6 +66,7 @@ export function renderRecipePage(recipe: Recipe): string {
       </h1>
       <input type="hidden" id="copy-markdown" name="markdown" value={recipe.markdown} />
       {parsed.category ? <p className="category">{parsed.category}</p> : null}
+      {parsed.ingredients.length > 0 ? <ScaleControls /> : null}
       <div className="content" dangerouslySetInnerHTML={{ __html: bodyHtml }} />
       <script dangerouslySetInnerHTML={{ __html: `
         function legacyCopy(text) {
@@ -99,6 +101,7 @@ export function renderRecipePage(recipe: Recipe): string {
       ` }} />
       <InlineEditor recipeId={recipe.id} />
       <TimerLinks />
+      {parsed.ingredients.length > 0 ? <RecipeScaler /> : null}
     </>,
   );
 }
